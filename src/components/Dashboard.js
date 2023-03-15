@@ -1,0 +1,150 @@
+import React, { useState, useEffect } from "react";
+import ProductForm from "./ProductForm";
+import ProductDetails from "./ProductDetails";
+import "./Dashboard.css";
+
+function Dashboard() {
+  const [products, setProducts] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const response = await fetch("https://fakestoreapi.com/products");
+      const data = await response.json();
+      setProducts(data);
+    };
+    fetchProducts();
+  }, []);
+
+  const handleCreate = () => {
+    setIsCreating(true);
+  };
+
+  const handleEdit = (product) => {
+    setSelectedProduct(product);
+    setIsEditing(true);
+  };
+
+  const handleCancel = () => {
+    setSelectedProduct(null);
+    setIsCreating(false);
+    setIsEditing(false);
+  };
+
+  const handleSave = (formData) => {
+    if (isCreating) {
+      const newProduct = {
+        ...formData,
+        id: Math.max(...products.map((product) => product.id)) + 1,
+      };
+      setProducts([...products, newProduct]);
+    } else {
+      const updatedProduct = {
+        ...formData,
+        id: selectedProduct.id,
+      };
+      const updatedProducts = products.map((product) =>
+        product.id === selectedProduct.id ? updatedProduct : product
+      );
+      setProducts(updatedProducts);
+    }
+    setSelectedProduct(null);
+    setIsCreating(false);
+    setIsEditing(false);
+  };
+
+  const handleDelete = (productId) => {
+    const updatedProducts = products.filter(
+      (product) => product.id !== productId
+    );
+    setProducts(updatedProducts);
+  };
+
+  return (
+    <div className="dashboard-container">
+      <h1>Dashboard</h1>
+      <button type="button" className="create-btn" onClick={handleCreate}>
+        Create New Product
+      </button>
+      <div>
+        {/* CREATE NEW PRODUCT */}
+        {isCreating && (
+          <tr>
+            <td colSpan="5">
+              <ProductForm onSave={handleSave} onCancel={handleCancel} />
+            </td>
+          </tr>
+        )}
+        {/* EDITING NEW PRODUCT */}
+        {isEditing && (
+          <ProductForm
+            onSave={handleSave}
+            onCancel={handleCancel}
+            product={selectedProduct}
+          />
+        )}
+        {selectedProduct && !isCreating && !isEditing && (
+          <ProductDetails
+            product={selectedProduct}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        )}
+      </div>
+      <table className="product-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Price</th>
+            <th>Image</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {products.map((product) => (
+            <tr key={product.id}>
+              <td>{product.id}</td>
+              <td>{product.title}</td>
+              <td>${product.price.toFixed(2)}</td>
+              <td>
+                <img
+                  src={product.image}
+                  alt={product.title}
+                  className="product-image"
+                />
+              </td>
+              <td>
+                <button
+                  type="button"
+                  className="edit-btn"
+                  onClick={() => handleEdit(product)}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  className="delete-btn"
+                  onClick={() => handleDelete(product.id)}
+                >
+                  Delete
+                </button>
+                <button
+                  type="button"
+                  className="view-btn"
+                  onClick={() => setSelectedProduct(product)}
+                >
+                  View
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export default Dashboard;
